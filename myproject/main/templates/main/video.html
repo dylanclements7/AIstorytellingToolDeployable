@@ -1,0 +1,120 @@
+{% load static %}
+{% load scene_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storyboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'main/css/style.css' %}">
+</head>
+<body>
+    <nav class="story-nav">
+        <div class="nav-container">
+            <!-- Left: Start Over -->
+            <a href="{% url 'idea' %}" class="nav-btn nav-start" onclick="return confirm('Are you sure you want to start over? All your current progress will be lost.');">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                Start Over
+            </a>
+            
+            <!-- Center: 4 editing steps -->
+            <div class="nav-center">
+                <a href="{% url 'draft' %}" class="nav-step completed">
+                    <i class="bi bi-book"></i>
+                    Storyline
+                </a>
+                <a href="{% url 'personas' %}" class="nav-step completed">
+                    <i class="bi bi-person"></i>
+                    Personas
+                </a>
+                <a href="{% url 'locations' %}" class="nav-step completed">
+                    <i class="bi bi-house"></i>
+                    Locations
+                </a>
+                <a href="{% url 'scene' %}" class="nav-step completed">
+                    <i class="bi bi-camera"></i>
+                    Scenes
+                </a>
+            </div>
+            
+            <!-- Right: Storyboard -->
+            <a href="{% url 'video' %}" class="nav-btn nav-storyboard completed">
+                <i class="bi bi-film"></i>
+                Storyboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="container text-center">
+        <br>
+        <h2 class="mb-4">View Your Story</h2>
+        <div class="row video-grid g-4">
+
+            {% for scene in scenes %}
+            <div class="col-md-4 col-sm-6">
+                <h2>Scene {{ scene.id }}</h2>
+                <a href="{% url 'scene' %}?slide={{ scene.id }}">
+                    <img src="{% static scene.image_path %}" alt="Scene {{ scene.id }}">
+                </a>
+                <div class="caption" style="font-size: 20px; color: black;"><p>{{ scene.narration }}</div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No scenes available. Please complete the story generation steps.
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+<!-- 
+    <div class="mt-5">
+        <div class="card shadow-sm mx-auto p-4" style="max-width: 900px; text-align: left;">
+            <h3 class="mb-4 text-center">Story Overview</h3>
+            <p class="text-secondary text-center mb-4">This is the prompt the AI used to create your story:</p>
+            <div class="mb-4">
+                <h5><a href="{% url 'draft' %}">Storyline:</a></h5>
+                <p>{{ story_data.storyline|linkify_characters_and_locations:story_data  }}</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5 class="text-secondary">Emotional Tones:</h5>
+                <div>
+                    {% for scene in scenes %}
+                    {% for tone in scene.emotional_tones %}
+                    <span class="badge bg-primary me-1">{{ tone }}</span>
+                    {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5 class="text-secondary">Characters:</h5>
+                {% for persona in story_data.persona_description %}
+                <div class="mb-3">
+                    <strong>{{ persona.name|linkify_characters_and_locations:story_data  }}</strong> ({{ persona.age }})
+                    <ul class="mt-2">
+                        <li><strong>Hair:</strong> {{ persona.hair }}</li>
+                        <li><strong>Skin:</strong> {{ persona.skin }}</li>
+                        <li><strong>Clothing:</strong> {{ persona.clothing }}</li>
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mb-4">
+                <h5 class="text-secondary">Locations:</h5>
+                {% for location in story_data.setting_description %}
+                <div class="mb-3">
+                    <strong>{{ location.name|linkify_characters_and_locations:story_data  }}</strong>
+                    <p class="mt-2">{{ location.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div> -->
+</body>
+</html>
