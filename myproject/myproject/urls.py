@@ -3,5 +3,5 @@ from django.urls import path, include  # include lets us connect to other URL fi
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('', include('main.urls')),  # route all URLs starting from / to the main app
+    path('', include('story_app.urls')),  # route all URLs starting from / to the main app
 ]
