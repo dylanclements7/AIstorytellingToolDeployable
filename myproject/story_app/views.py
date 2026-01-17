@@ -164,7 +164,7 @@ def scene(request):
         
         if action == 'regenerate_narration':
             feedback = request.POST.get('narration_feedback')
-            from main.logic.ai import narrationGenerate
+            from story_app.logic.ai import narrationGenerate
             updated_narration = narrationGenerate(story_data, scene_id, feedback)
             save_interaction_log(
                 user_input=feedback,

@@ -26,13 +26,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ze_g3i#)qk+@pilb!7ol2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not os.getenv('GAE_APPLICATION', None)
 
-if os.getenv('GAE_APPLICATION', None):
-    # Running on App Engine
-    ALLOWED_HOSTS = ['*']
-else:
-    # Local development
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['aistorytool.ue.r.appspot.com', 'localhost', '127.0.0.1', '*']
 
+CSRF_TRUSTED_ORIGINS = ['https://aistorytool.ue.r.appspot.com']
 
 # Application definition
 
@@ -48,6 +44,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -123,7 +120,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
-
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

@@ -1,19 +1,22 @@
-# Django
+# Django-specific ignores
+*.log
+*.pot
 *.pyc
 __pycache__/
 db.sqlite3
+media/
+static/
 
-# Environment
-venv/
+# Environment and Secret files
 .env
+.venv
+env/
+venv/
+*.bak
 
-# IDE
-.vscode/
-.idea/
+# Google Cloud ignores
+.gcloudignore
+.cloudstorage/
 
-# OS
+# System files
 .DS_Store
-
-user_logs
-
-main/static/main/images/generated/
