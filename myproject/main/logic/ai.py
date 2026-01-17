@@ -122,20 +122,38 @@ def storylineGenerate(story_data, feedback):
     Returns:
         dict: Complete regenerated story with updated storyline
     """
+    # Create a lightweight version WITHOUT images
+    story_data_for_prompt = {
+        'storyline': story_data.get('storyline'),
+        'persona_description': story_data.get('persona_description'),
+        'setting_description': story_data.get('setting_description'),
+        'scenes': [
+            {
+                'id': s['id'],
+                'image_prompt': s['image_prompt'],
+                'narration': s['narration'],
+                'emotional_tones': s['emotional_tones'],
+                'characters': s['characters'],
+                'location': s['location']
+            }
+            for s in story_data['scenes']
+        ]
+    }
+    
     prompt = f"""
     You are updating the storyline of a story and must regenerate the ENTIRE story to reflect this change.
     
     Current Story:
-    Storyline: {story_data['storyline']}
+    Storyline: {story_data_for_prompt['storyline']}
     
     Characters:
-    {json.dumps(story_data['persona_description'], indent=2)}
+    {json.dumps(story_data_for_prompt['persona_description'], indent=2)}
     
     Locations:
-    {json.dumps(story_data['setting_description'], indent=2)}
+    {json.dumps(story_data_for_prompt['setting_description'], indent=2)}
     
     Current Scenes:
-    {json.dumps(story_data['scenes'], indent=2)}
+    {json.dumps(story_data_for_prompt['scenes'], indent=2)}
     
     User Feedback for Storyline: {feedback}
     
@@ -207,24 +225,8 @@ def storyGenerate(idea):
 
 import time
 import re
-
-# def generate_scene_image(image_prompt, emotional_tones, scene_id, story_data, max_retries=3):
-#     # Replace character names with full descriptions
-#     enhanced_prompt = image_prompt
-    
-#     for persona in story_data.get('persona_description', []):
-#         name = persona['name']
-#         description = f"{persona['name']}, {persona['age']} years old, with {persona['hair']} hair, {persona['skin']} skin, wearing {persona['clothing']}"
-#         # Replace name with full description
-#         enhanced_prompt = re.sub(r'\b' + re.escape(name) + r'\b', description, enhanced_prompt, flags=re.IGNORECASE)
-    
-#     # Replace location names with full descriptions
-#     for location in story_data.get('setting_description', []):
-#         name = location['name']
-#         description = location['description']
-#         enhanced_prompt = re.sub(r'\b' + re.escape(name) + r'\b', description, enhanced_prompt, flags=re.IGNORECASE)
-#     tone_text = ", ".join(emotional_tones)
-#     enhanced_prompt += f". The image should reflect the emotional tones: {tone_text}."
+import base64
+from io import BytesIO
 
 def generate_scene_image(image_prompt, emotional_tones, scene_id, story_data, max_retries=3):
     # Replace character names with full descriptions
@@ -242,22 +244,15 @@ def generate_scene_image(image_prompt, emotional_tones, scene_id, story_data, ma
     
     tone_text = ", ".join(emotional_tones)
     enhanced_prompt += f". The image should reflect the emotional tones: {tone_text}."
-
     print(f"Enhanced prompt for scene {scene_id}: {enhanced_prompt}")
+    
     for attempt in range(max_retries):
         try:
             from google import genai as google_genai
             from google.genai import types
-            # Create client with API key
+            
             client = google_genai.Client(api_key=api_key)
             
-            # Generate image flash
-            # response = client.models.generate_content(
-            #     model="gemini-2.5-flash-image",
-            #     contents=[enhanced_prompt],
-            # )
-
-            #Generate image pro
             response = client.models.generate_content(
                 model="gemini-3-pro-image-preview",
                 contents=[enhanced_prompt],
@@ -268,21 +263,17 @@ def generate_scene_image(image_prompt, emotional_tones, scene_id, story_data, ma
                 )
             )
             
-            # Extract and save image
             for part in response.parts:
                 if part.inline_data is not None:
-                    image = part.as_image()
+                    # Get the image bytes directly from inline_data
+                    image_bytes = part.inline_data.data
                     
-                    image_dir = Path("main/static/main/images/generated")
-                    image_dir.mkdir(parents=True, exist_ok=True)
+                    # Convert to base64 data URL
+                    img_str = base64.b64encode(image_bytes).decode()
+                    data_url = f"data:image/png;base64,{img_str}"
                     
-                    timestamp = int(time.time())
-                    image_path = image_dir / f"scene_{scene_id}_{timestamp}.png"
-                    image.save(str(image_path))
                     logger.info(f"Generated image for scene {scene_id} on attempt {attempt + 1}")
-                    
-                    # Return path 
-                    return f"main/images/generated/scene_{scene_id}_{timestamp}.png", enhanced_prompt
+                    return data_url, enhanced_prompt
             
             logger.warning(f"No image generated for scene {scene_id} on attempt {attempt + 1}")
             
@@ -290,17 +281,14 @@ def generate_scene_image(image_prompt, emotional_tones, scene_id, story_data, ma
             logger.warning(f"Error generating image for scene {scene_id} (attempt {attempt + 1}/{max_retries}): {e}")
             
             if attempt < max_retries - 1:
-                # Exponential backoff: wait 2^attempt seconds
                 wait_time = 2 ** attempt
                 logger.info(f"Retrying in {wait_time} seconds...")
                 time.sleep(wait_time)
             else:
-                # All retries failed
                 logger.error(f"Failed to generate image for scene {scene_id} after {max_retries} attempts")
-                return f"main/images/generated/scene_{scene_id}.png"
+                return "https://via.placeholder.com/576x1024.png?text=Image+Generation+Failed", enhanced_prompt
     
-    # Fallback if loop completes without returning
-    return "main/images/exampleImage.png", enhanced_prompt
+    return "https://via.placeholder.com/576x1024.png?text=Image+Generation+Failed", enhanced_prompt
 
 def generate_all_scene_images(scenes, story_data, old_scenes=None):
     """Only regenerate images for scenes with changed enhanced prompts."""
@@ -369,11 +357,29 @@ def characterGenerate(story_data, character_id, feedback):
     
     other_characters = [c for c in story_data['persona_description'] if c['id'] != character_id]
     
+    # Create a lightweight version WITHOUT images
+    story_data_for_prompt = {
+        'storyline': story_data.get('storyline'),
+        'persona_description': story_data.get('persona_description'),
+        'setting_description': story_data.get('setting_description'),
+        'scenes': [
+            {
+                'id': s['id'],
+                'image_prompt': s['image_prompt'],
+                'narration': s['narration'],
+                'emotional_tones': s['emotional_tones'],
+                'characters': s['characters'],
+                'location': s['location']
+            }
+            for s in story_data['scenes']
+        ]
+    }
+    
     prompt = f"""
     You are updating a character in a story and must edit any part of the story necessary to reflect this change consistently throughout.
     
     Current Story:
-    Storyline: {story_data['storyline']}
+    Storyline: {story_data_for_prompt['storyline']}
     
     Character Being Updated (ID {character_id}):
     {json.dumps(current_character, indent=2)}
@@ -384,12 +390,11 @@ def characterGenerate(story_data, character_id, feedback):
     {json.dumps(other_characters, indent=2)}
     
     Settings (keep these the same):
-    {json.dumps(story_data['setting_description'], indent=2)}
+    {json.dumps(story_data_for_prompt['setting_description'], indent=2)}
     
     Current Scenes:
-    {json.dumps(story_data['scenes'], indent=2)}
+    {json.dumps(story_data_for_prompt['scenes'], indent=2)}
     
-    IMPORTANT:
     IMPORTANT:
     1. Update character {character_id} based on the user feedback.
     2. Regenerate only the parts of the storyline and all 6 scenes that need to be changed to reflect the updated character naturally (updating apperance, name, etc.), leave the rest exactly the same.
@@ -418,7 +423,6 @@ def characterGenerate(story_data, character_id, feedback):
 
 
 def locationGenerate(story_data, location_id, feedback):
-
     current_location = next(
         (loc for loc in story_data['setting_description'] if loc['id'] == location_id),
         None
@@ -432,12 +436,30 @@ def locationGenerate(story_data, location_id, feedback):
         if loc['id'] != location_id
     ]
 
+    # Create a lightweight version WITHOUT images
+    story_data_for_prompt = {
+        'storyline': story_data.get('storyline'),
+        'persona_description': story_data.get('persona_description'),
+        'setting_description': story_data.get('setting_description'),
+        'scenes': [
+            {
+                'id': s['id'],
+                'image_prompt': s['image_prompt'],
+                'narration': s['narration'],
+                'emotional_tones': s['emotional_tones'],
+                'characters': s['characters'],
+                'location': s['location']
+            }
+            for s in story_data['scenes']
+        ]
+    }
+
     prompt = f"""
     You are updating a location in a story and must minimally regenerate any parts of the story 
     that need changes to reflect this environmental change consistently throughout.
 
     Current Story:
-    Storyline: {story_data['storyline']}
+    Storyline: {story_data_for_prompt['storyline']}
 
     Location Being Updated (ID {location_id}):
     {json.dumps(current_location, indent=2)}
@@ -449,10 +471,10 @@ def locationGenerate(story_data, location_id, feedback):
     {json.dumps(other_locations, indent=2)}
 
     Characters (keep these the same):
-    {json.dumps(story_data['persona_description'], indent=2)}
+    {json.dumps(story_data_for_prompt['persona_description'], indent=2)}
 
     Current Scenes:
-    {json.dumps(story_data['scenes'], indent=2)}
+    {json.dumps(story_data_for_prompt['scenes'], indent=2)}
 
     IMPORTANT:
     1. Update location {location_id} based on the user feedback.
@@ -475,7 +497,7 @@ def locationGenerate(story_data, location_id, feedback):
 
         logger.info(f"locationGenerate result: {result}")
 
-        logger.info("Regenerating all scene images with updated character...")
+        logger.info("Regenerating all scene images with updated location...")
         result['scenes'] = generate_all_scene_images(result['scenes'], result, old_scenes=story_data.get('scenes'))
         return result
 
@@ -492,6 +514,24 @@ def narrationGenerate(story_data, scene_id, narration_feedback):
     if not current_scene:
         raise ValueError(f"Scene with id {scene_id} not found")
     
+    story_data_for_prompt = {
+        'storyline': story_data.get('storyline'),
+        'persona_description': story_data.get('persona_description'),
+        'setting_description': story_data.get('setting_description'),
+        'scenes': [
+            {
+                'id': s['id'],
+                'image_prompt': s['image_prompt'],
+                'narration': s['narration'],
+                'emotional_tones': s['emotional_tones'],
+                'characters': s['characters'],
+                'location': s['location']
+                # Exclude 'image_path' and 'enhanced_prompt'
+            }
+            for s in story_data['scenes']
+        ]
+    }
+    
     scene_index = scene_id - 1
     prev_scene = story_data['scenes'][scene_index - 1] if scene_index > 0 else None
     next_scene = story_data['scenes'][scene_index + 1] if scene_index < len(story_data['scenes']) - 1 else None
@@ -500,7 +540,7 @@ def narrationGenerate(story_data, scene_id, narration_feedback):
     You are updating ONLY the narration for Scene {scene_id}. Do not change anything else.
     
     Story Context:
-    Storyline: {story_data['storyline']}
+    Storyline: {story_data_for_prompt['storyline']}
     
     Scene {scene_id} Image:
     {current_scene['image_prompt']}
@@ -538,26 +578,45 @@ def PromptGenerate(story_data, scene_id, image_prompt_feedback):
     if not current_scene:
         raise ValueError(f"Scene with id {scene_id} not found")
     
+    # Create a lightweight version of story_data WITHOUT image_path for the prompt
+    story_data_for_prompt = {
+        'storyline': story_data.get('storyline'),
+        'persona_description': story_data.get('persona_description'),
+        'setting_description': story_data.get('setting_description'),
+        'scenes': [
+            {
+                'id': s['id'],
+                'image_prompt': s['image_prompt'],
+                'narration': s['narration'],
+                'emotional_tones': s['emotional_tones'],
+                'characters': s['characters'],
+                'location': s['location']
+                # Exclude 'image_path' and 'enhanced_prompt'
+            }
+            for s in story_data['scenes']
+        ]
+    }
+    
     prompt = f"""
     A user is editing the image prompt for Scene {scene_id}. This change may affect character descriptions, 
     locations, or other story elements. You must regenerate any element in the story that needs to be changed to ensure
     complete consistency throughout the entire story.
     
     Current Story:
-    Storyline: {story_data['storyline']}
+    Storyline: {story_data_for_prompt['storyline']}
     
     Characters:
-    {json.dumps(story_data['persona_description'], indent=2)}
+    {json.dumps(story_data_for_prompt['persona_description'], indent=2)}
     
     Locations:
-    {json.dumps(story_data['setting_description'], indent=2)}
+    {json.dumps(story_data_for_prompt['setting_description'], indent=2)}
     
     Current Scene {scene_id}:
     Image Prompt: {current_scene['image_prompt']}
     Narration: {current_scene['narration']}
     
     All Scenes:
-    {json.dumps(story_data['scenes'], indent=2)}
+    {json.dumps(story_data_for_prompt['scenes'], indent=2)}
     
     User's Change to Scene {scene_id} Image Prompt: {image_prompt_feedback}
     
@@ -566,9 +625,9 @@ def PromptGenerate(story_data, scene_id, image_prompt_feedback):
        update that character in persona_description
     2. Only if the feedback changes a location's details, update that location in setting_description
     3. Update the storyline only if the change affects the narrative to guarantee consistency.
-    4. Change only the image prompt for this scene, only change others if neccesary to maintain consitency and storyline.
+    4. Regenerate the parts of all 6 scenes that need to be changed to reflect the updated image prompt naturally.
     5. Maintain the same story flow, structure, and scene ordering.
-    6. Make minimal changes necessary to ensure consistency after making the user's changes.
+    6. Make minimal changes necessary to ensure consistency after making the user's changes. For example, if the user feedback is that a character should be doing a certain action or the camera angle should be different, only this scene's image prompt and narration need to be changed, nothing else.
     
     The goal is complete consistency: if something changes visually in one scene, 
     it must be reflected everywhere in the story.

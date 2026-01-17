@@ -13,23 +13,24 @@ from datetime import datetime
 
 def save_interaction_log(user_input, output_data, images, action_type):
     """Save each interaction to local storage."""
-    log_dir = Path("user_logs")
-    log_dir.mkdir(exist_ok=True)
+    pass
+    # log_dir = Path("user_logs")
+    # log_dir.mkdir(exist_ok=True)
     
-    timestamp = datetime.now().isoformat()
-    log_entry = {
-        'timestamp': timestamp,
-        'action_type': action_type,
-        'user_input': user_input,
-        'output_data': output_data,
-        'images': images
-    }
+    # timestamp = datetime.now().isoformat()
+    # log_entry = {
+    #     'timestamp': timestamp,
+    #     'action_type': action_type,
+    #     'user_input': user_input,
+    #     'output_data': output_data,
+    #     'images': images
+    # }
     
-    log_file = log_dir / f"interaction_{timestamp.replace(':', '-')}.json"
-    with open(log_file, 'w') as f:
-        json.dump(log_entry, f, indent=2)
+    # log_file = log_dir / f"interaction_{timestamp.replace(':', '-')}.json"
+    # with open(log_file, 'w') as f:
+    #     json.dump(log_entry, f, indent=2)
     
-    logger.info(f"Saved interaction log: {log_file}")
+    # logger.info(f"Saved interaction log: {log_file}")
 
 def idea(request):
     if request.method == 'GET' and request.headers.get('x-requested-with') == 'XMLHttpRequest':

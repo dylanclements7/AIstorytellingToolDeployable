@@ -56,7 +56,7 @@
             <div class="col-md-4 col-sm-6">
                 <h2>Scene {{ scene.id }}</h2>
                 <a href="{% url 'scene' %}?slide={{ scene.id }}">
-                    <img src="{% static scene.image_path %}" alt="Scene {{ scene.id }}">
+                    <img src="{{ scene.image_path }}" alt="Scene {{ scene.id }}">
                 </a>
                 <div class="caption" style="font-size: 20px; color: black;"><p>{{ scene.narration }}</div>
             </div>
